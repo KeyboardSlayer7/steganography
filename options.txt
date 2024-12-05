@@ -1,0 +1,6 @@
+-i: input file
+-o: output file
+-h: hide
+-e: extract
+-s: string
+-f: file
