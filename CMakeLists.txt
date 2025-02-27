@@ -19,7 +19,11 @@ set(
     src/compression.c
     src/global.h
     src/global.c
+    src/filter.h
+    src/filter.c
 )
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(
     Steganography

@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "compression.h"
 #include "global.h"
 #include "zlib.h"
+#include "filter.h"
 
 void initDataBlock(DataBlock* data_block, uint32_t size)
 {
@@ -43,7 +45,8 @@ DataBlock* zlibDeflate(const DataBlock* data, uint32_t original_size)
     stream.avail_out = blob->length; 
     stream.next_out = blob->data;
 
-    output = deflateInit(&stream, Z_BEST_COMPRESSION);
+    output = deflateInit(&stream, Z_BEST_COMPRESSION); // Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
+    // deflateParams(&stream, Z_DEFAULT_COMPRESSION, Z_FILTERED);
 
     if (output != Z_OK)
     {
@@ -61,6 +64,12 @@ DataBlock* zlibDeflate(const DataBlock* data, uint32_t original_size)
     {
         return NULL;
     }
+
+    FILE* file = fopen("deflated.txt", "wb+");
+
+    fwrite(blob->data, sizeof(byte), blob->length, file);
+
+    fclose(file);
 
     return blob;
 }
@@ -107,6 +116,14 @@ DataBlock* zlibInflate(const DataBlock* data, uint32_t projected_size)
         return NULL;
     }
 
+    // printf("avail_out: %d, avail_in: %d, given: %d\n", stream.avail_out, stream.avail_in, blob->length);
+
+    FILE* file = fopen("inflated.txt", "wb+");
+    
+    fwrite(blob->data, sizeof(byte), blob->length, file);
+
+    fclose(file);
+
     return blob;
 }
 
@@ -117,96 +134,43 @@ DataBlock* applyFilter(DataBlock* raw_data, int scanline_length)
     DataBlock* filtered_data = malloc(sizeof(DataBlock));
     initDataBlock(filtered_data, raw_data->length);
 
-    for (int i = 0; i < scanlines; ++i)
+    FilterData filter_data;
+    filter_data.before = raw_data->data;
+    filter_data.after = filtered_data->data;
+    filter_data.scanline_length = scanline_length;
+    filter_data.bpp = 4;
+    filter_data.apply = true;
+    
+    for (int i = 0; i < scanlines; i++)
     {
-        int row = i * scanline_length;
-        switch ((FilterType)(raw_data->data[row]))
+        filter_data.scanline = i * scanline_length;
+        // printf("Scanline: %d, index: %d, value: %d\n", i, filter_data.scanline, raw_data->data[filter_data.scanline]);
+
+        switch (raw_data->data[i * scanline_length])
         {
             case NONE:
+                // filterNone(&filter_data);
                 break;
             case SUB:
-                for (int j = 0; j < scanline_length; j++)
-                {
-                    if (j == 0 || j == 1)
-                    {
-                        filtered_data->data[row + j] = raw_data->data[row + j];
-                    }
-                    else
-                    {
-                        filtered_data->data[row + j] = raw_data->data[row + j] - raw_data->data[row + j - 4];
-                    }
-                }
+                filterSub(&filter_data);
                 break;
             case UP:
-                if (i == 0)
-                {
-                    break;
-                }
-                else
-                {
-                    for (int j = 0; j < scanline_length; j++)
-                    {
-                        if (j == 0)
-                        {
-                            filtered_data->data[row + j] = raw_data->data[row + j];
-                        }
-                        else
-                        {
-                            filtered_data->data[row + j] = raw_data->data[row + j] - raw_data->data[(row - scanline_length) + j];
-                        }
-                    }
-                }
+                filterUp(&filter_data);
                 break;
             case AVERAGE:
-                if (i == 0)
-                {
-                    break;
-                }
-                else 
-                {
-                    for (int j = 0; j < scanline_length; j++)
-                    {
-                        if (j == 0 || j == 1)
-                        {
-                            filtered_data->data[row + j] = raw_data->data[row + j];
-                        }
-                        else
-                        {
-                            filtered_data->data[row + j] = raw_data->data[row + j] - ((raw_data->data[row + j - 1] + raw_data->data[(row - scanline_length) + j]) / 2);
-                        }
-                    }
-                }
+                filterAverage(&filter_data);
                 break;
             case PAETH:
-                // printf("PAETH has not been implemented\n");
-                
-                for (int j = 0; j < scanline_length; j++)
-                {
-                    uint8_t a, b, c, p, pa, pb, pc, pr;
-
-                    c = raw_data->data[(row - scanline_length) + j - 1];
-                    b = raw_data->data[(row - scanline_length) + j];
-                    a = raw_data->data[row + j - 1];
-
-                    p = a + b - c;
-                    pa = abs(p - a);
-                    pb = abs(p - b);
-                    pc = abs(p - c);
-
-                    if (pa <= pb && pa <= pc)
-                        pr = a;
-                    else if (pc <= pc)
-                        pr = b;
-                    else
-                        pr = c;
-
-                    filtered_data->data[row + j] = raw_data->data[row + j] - pr;
-                }
-
-                return NULL;
+                filterPaeth(&filter_data);
                 break;
         }
-    } 
+    }
+
+    FILE* file = fopen("filtered.txt", "wb+");
+    
+    fwrite(filtered_data->data, sizeof(byte), filtered_data->length, file);
+
+    fclose(file);
 
     return filtered_data;
 }
@@ -220,96 +184,37 @@ DataBlock* removeFilter(DataBlock* filtered_data, int scanline_length)
     DataBlock* raw_data = malloc(sizeof(DataBlock));
     initDataBlock(raw_data, filtered_data->length);
 
-    for (int i = 0; i < scanlines; ++i)
+    FilterData filter_data;
+    filter_data.before = filtered_data->data;
+    filter_data.after = raw_data->data;
+    filter_data.scanline_length = scanline_length;
+    filter_data.bpp = 4;
+    filter_data.apply = false;
+
+    for (int i = 0; i < scanlines; i++)
     {
-        int row = i * scanline_length; 
-        switch ((FilterType)(filtered_data->data[row]))
+        filter_data.scanline = i * scanline_length;
+        // printf("Scanline: %d, index: %d, value: %d\n", i, filter_data.scanline, filtered_data->data[filter_data.scanline]);
+
+        switch (filtered_data->data[i * scanline_length])
         {
             case NONE:
+                // filterNone(&filter_data);
                 break;
             case SUB:
-                for (int j = 0; j < scanline_length; j++)
-                {
-                    if (j == 0 || j == 1)
-                    {
-                        raw_data->data[row + j] = filtered_data->data[row + j];
-                    }
-                    else
-                    {
-                        raw_data->data[row + j] = filtered_data->data[row + j] + raw_data->data[row + j - 4];
-                    }
-                }
+                filterSub(&filter_data);
                 break;
             case UP:
-                if (i == 0)
-                {
-                    break;
-                }
-                else
-                {
-                    for (int j = 0; j < scanline_length; j++)
-                    {
-                        if (j == 0)
-                        {
-                            raw_data->data[row + j] = filtered_data->data[row + j];
-                        }
-                        else
-                        {
-                            raw_data->data[row + j] = filtered_data->data[row + j] + raw_data->data[(row - scanline_length) + j];
-                        }
-                    }
-                }
+                filterUp(&filter_data);
                 break;
             case AVERAGE:
-                if (i == 0)
-                {
-                    break;
-                }
-                else 
-                {
-                    for (int j = 0; j < scanline_length; j++)
-                    {
-                        if (j == 0 || j == 1)
-                        {
-                            raw_data->data[row + j] = filtered_data->data[row + j];
-                        }
-                        else
-                        {
-                            raw_data->data[row + j] = filtered_data->data[row + j] + ((raw_data->data[row + j - 1] + raw_data->data[(row - scanline_length) + j]) / 2);
-                        }
-                    }
-                }
+                filterAverage(&filter_data);
                 break;
             case PAETH:
-                // printf("PAETH has not been implemented\n");
-                
-                for (int j = 0; j < scanline_length; j++)
-                {
-                    uint8_t a, b, c, p, pa, pb, pc, pr;
-
-                    c = raw_data->data[(row - scanline_length) + j - 1];
-                    b = raw_data->data[(row - scanline_length) + j];
-                    a = raw_data->data[row + j - 1];
-
-                    p = a + b - c;
-                    pa = abs(p - a);
-                    pb = abs(p - b);
-                    pc = abs(p - c);
-
-                    if (pa <= pb && pa <= pc)
-                        pr = a;
-                    else if (pc <= pc)
-                        pr = b;
-                    else
-                        pr = c;
-
-                    raw_data->data[row + j] = filtered_data->data[row + j] + pr;
-                }
-
-                return NULL;
+                filterPaeth(&filter_data);
                 break;
         }
-    } 
+    }
 
     return raw_data;
 }

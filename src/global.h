@@ -14,6 +14,7 @@
 
 #define HEADER 8
 #define KILO_BYTE 1024
+#define BITS_IN_BYTE 8
 
 typedef uint8_t byte;
 

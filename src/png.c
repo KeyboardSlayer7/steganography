@@ -22,7 +22,7 @@ void loadPNG(PNG* png, const char* file_path)
 {
     initPNG(png);
 
-    FILE* file = fopen(file_path, "rb");
+    FILE* file = fopen(file_path, "rb+");
 
     Chunk chunk;
     initChunk(&chunk);
@@ -175,7 +175,7 @@ DataBlock* compressRawPixelData(DataBlock* raw, const IHDR* ihdr, int original_s
     int bytes_per_pixel = bytesPerPixel(ihdr->color_type, ihdr->bit_depth);
     int scanline_length = (ihdr->width * bytes_per_pixel) + 1;
 
-    DataBlock* filtered = applyFilter(&original, scanline_length);
+    DataBlock* filtered = applyFilter(&original, scanline_length); 
     DataBlock* deflated = zlibDeflate(filtered, original_size);
 
     destroyDataBlock(filtered);
@@ -244,10 +244,71 @@ char* readPNGInChunks(FILE* file, Chunk* chunk)
     return NULL;
 }
 
+void hide(DataBlock* data, const char* string)
+{
+    // hide data length
+    uint32_t length = strlen(string);
+    byte* bytes_of_length = &length;
+
+    for (int byte = 0; byte < sizeof(uint32_t); ++byte)
+    {
+        printf("Value of byte %d: %d\n", byte, bytes_of_length[byte]);
+
+        for (int bit_pair = 0; bit_pair < BITS_IN_BYTE / 2; ++bit_pair)
+        {
+            int index = byte * sizeof(uint32_t) + bit_pair + 1;
+            data->data[index] = setLeastSignificantBits(data->data[index], getNthBitPair(bytes_of_length[byte], bit_pair));
+        } 
+    }
+
+    // hide data 
+
+    for (int byte = 0; byte < length; ++byte)
+    {
+        for (int bit_pair = 0; bit_pair < BITS_IN_BYTE / 2; ++bit_pair)
+        {
+            int index = byte * length + bit_pair + 17;
+            data->data[index] = setLeastSignificantBits(data->data[index], getNthBitPair(string[byte], bit_pair));
+        }
+    }
+
+}
+
+char* retrieve(DataBlock* data)
+{
+    // get length of data 
+    uint32_t length = 0; 
+
+    for (int byte = 0; byte < sizeof(uint32_t); ++byte)
+    {
+        for (int i = 0; i < BITS_IN_BYTE / 2; ++i)
+        {
+            length |= (uint32_t)getNthBitPair(data->data[byte * sizeof(uint32_t) + i + 1], 0) << (byte * sizeof(uint32_t) + i) * 2;
+        }
+    }
+
+    printf("message of %d bytes\n", length);
+   
+    // get actual data
+    byte* message = malloc(sizeof(byte) * length + 1);
+    memset(message, 0, length);
+    message[length] = '\0';
+
+    for (int byte = 0; byte < length; ++byte)
+    {
+        for (int i = 0; i < BITS_IN_BYTE / 2; ++i)
+        {
+            message[byte] |= getNthBitPair(data->data[byte * length + i + 17], 0) << i * 2;
+        } 
+    }
+
+    return (char*)message;
+}
+
 // data MUST be null terminated
 void createModifiedPNGFile(PNG* png, const char* data)
 {
-    FILE* file = fopen("../out.png", "ab");
+    FILE* file = fopen("out.png", "wb+");
 
     fwrite(png->header, sizeof(byte), HEADER, file);
 
@@ -267,33 +328,44 @@ void createModifiedPNGFile(PNG* png, const char* data)
 
         if (!strcmp(chunk.type, "IDAT"))
         {
+            FILE* another_file = fopen("original_deflated.txt", "wb+");
+            fwrite(chunk.data, sizeof(byte), chunk.length, another_file);
+            fclose(another_file);
+
             DataBlock* raw = getRawPixelData(&chunk, &png->ihdr);
+            
+            // printf("got raw pixel data\n");
 
             // hiding length of data
-            for (int int_byte = 0; int_byte < sizeof(uint32_t); ++int_byte)
-            {
-                printf("byte: %d\n", (uint32_t)data_length_bytes[int_byte]);
-                for (int pair = 0; pair < 8 / 2; ++pair)
-                {
-                    int b = int_byte * 4 + pair + 1;
-                    byte changed_value = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
+            // for (int int_byte = 0; int_byte < sizeof(uint32_t); ++int_byte)
+            // {
+            //     printf("byte: %d\n", (uint32_t)data_length_bytes[int_byte]);
+            //     for (int pair = 0; pair < 8 / 2; ++pair)
+            //     {
+            //         int b = int_byte * 4 + pair + 1;
+            //         byte changed_value = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
                     
-                    printf("Changing byte: %d, from %d to %d\n", b, (uint8_t)raw->data[b], (uint8_t)changed_value);
+            //         printf("Changing byte: %d, from %d to %d\n", b, (uint8_t)raw->data[b], (uint8_t)changed_value);
 
-                    raw->data[b] = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
-                }
-            }
+            //         raw->data[b] = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
+            //     }
+            // }
 
-            for (int i = 0; i < 16; ++i)
-            {
-                printf("byte: %d\n", raw->data[i + 1]);
-            }
+            // for (int i = 0; i < 16; ++i)
+            // {
+            //     printf("byte: %d\n", raw->data[i + 1]);
+            // }
+
+            hide(raw, data);
 
             DataBlock* deflated = compressRawPixelData(raw, &png->ihdr, chunk.length);
+            
             chunk.length = deflated->length;
             chunk.data = deflated->data;
             uint32_t crc_temp = (0L, Z_NULL, 0);
             chunk.crc = crc32(crc_temp, chunk.data, chunk.length); 
+
+            printf("CRC after: %d\n", chunk.crc);
         }
 
         uint32_t length = byteswap(chunk.length);
@@ -306,4 +378,25 @@ void createModifiedPNGFile(PNG* png, const char* data)
     }
 
     fclose(file);
+}
+
+char* retrieveFromPNGFile(PNG* png)
+{
+    char* output;
+
+    for (int i = 0; i < png->chunks.size; ++i)
+    {
+        Chunk chunk = getChunk(&png->chunks, i);
+
+        if (!strcmp(chunk.type, "IDAT"))
+        {
+            DataBlock* raw = getRawPixelData(&chunk, &png->ihdr);
+            
+            output = retrieve(raw);
+
+            free(raw);
+        }
+    }
+
+    return output;
 }

@@ -65,7 +65,11 @@ uint8_t bytesPerPixel(ColorType color_type, uint8_t bit_depth);
 DataBlock* getRawPixelData(Chunk* chunk, const IHDR* ihdr);
 DataBlock* compressRawPixelData(DataBlock* raw, const IHDR* ihdr, int original_size);
 
+void hide(DataBlock* data, const char* string);
+char* retrieve(DataBlock* data);
+
 char* readPNGInChunks(FILE* file, Chunk* chunk);
 void createModifiedPNGFile(PNG* png, const char* data);
+char* retrieveFromPNGFile(PNG* png);
 
 #endif

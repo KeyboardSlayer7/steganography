@@ -14,11 +14,11 @@ typedef struct datablock_t
 // typedef Blob* BlobPtr;
 typedef enum filtertype_t
 {
-    NONE,
-    SUB,
-    UP,
-    AVERAGE,
-    PAETH
+    NONE = 0,
+    SUB = 1,
+    UP = 2,
+    AVERAGE = 3,
+    PAETH = 4
 } FilterType;
 
 void initDataBlock(DataBlock* data_block, uint32_t size);
