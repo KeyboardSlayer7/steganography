@@ -202,16 +202,16 @@ DataBlock* removeFilter(DataBlock* filtered_data, int scanline_length)
                 // filterNone(&filter_data);
                 break;
             case SUB:
-                filterSub(&filter_data);
+                unfilterSub(&filter_data);
                 break;
             case UP:
-                filterUp(&filter_data);
+                unfilterUp(&filter_data);
                 break;
             case AVERAGE:
-                filterAverage(&filter_data);
+                unfilterAverage(&filter_data);
                 break;
             case PAETH:
-                filterPaeth(&filter_data);
+                unfilterPaeth(&filter_data);
                 break;
         }
     }

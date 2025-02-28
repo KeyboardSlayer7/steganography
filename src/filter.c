@@ -38,116 +38,180 @@ void filterSub(FilterData* filter_data)
     for (int i = 0; i < filter_data->scanline_length; i++)
     {
         int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte a = filter_data->before[current_index - filter_data->bpp];
+
         if (i < filter_data->bpp)
         {
-            filter_data->after[current_index] = filter_data->before[current_index];
+            filter_data->after[current_index] = x;
+            continue;
+        }
+  
+        filter_data->after[current_index] = x - a;         
+    }
+}
+
+void unfilterSub(FilterData* filter_data)
+{
+    int current_scanline_start = filter_data->scanline;
+
+    for (int i = 0; i < filter_data->scanline_length; i++)
+    {
+        int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte a = filter_data->after[current_index - filter_data->bpp];
+
+        if (i < filter_data->bpp)
+        {
+            filter_data->after[current_index] = x;
             continue;
         }
 
-        byte a = filter_data->before[current_index - filter_data->bpp];
-        byte x = filter_data->before[current_index];
-
-        if (filter_data->apply)
-        { 
-            filter_data->after[current_index] = x - a;
-        }
-        else
-        {
-            filter_data->after[current_index] = filter_data->before[current_index] + filter_data->after[current_index - filter_data->bpp];
-        }
+        filter_data->after[current_index] = x + a;
     }
 }
 
 void filterUp(FilterData* filter_data)
 {
     int current_scanline_start = filter_data->scanline;
+
     for (int i = 0; i < filter_data->scanline_length; i++)
     {
         int current_index = current_scanline_start + i;
+        
+        byte x = filter_data->before[current_index];
+        byte b = filter_data->before[current_index - filter_data->scanline_length];
+
         if (i == 0)
         {
-            filter_data->after[current_index] = filter_data->before[current_index];
+            filter_data->after[current_index] = x;
             continue;
         }
 
-        byte b = filter_data->before[current_index - filter_data->scanline_length];
-        byte x = filter_data->before[current_index];
+        filter_data->after[current_index] = x - b; 
+    }
+}
 
-        if (filter_data->apply)
+void unfilterUp(FilterData* filter_data)
+{
+    int current_scanline_start = filter_data->scanline;
+
+    for (int i = 0; i < filter_data->scanline_length; i++)
+    {
+        int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte b = filter_data->after[current_index - filter_data->scanline_length];
+
+        if (i == 0)
         {
-            filter_data->after[current_index] = x - b;
+            filter_data->after[current_index] = x;
+            continue;
         }
-        else
-        {
-            filter_data->after[current_index] = filter_data->before[current_index] + filter_data->after[current_index - filter_data->scanline_length];
-        } 
+
+        filter_data->after[current_index] = x + b;
     }
 }
 
 void filterAverage(FilterData* filter_data)
 {
     int current_scanline_start = filter_data->scanline;
+
     for (int i = 0; i < filter_data->scanline_length; i++)
     {
         int current_index = current_scanline_start + i;
 
+        byte x = filter_data->before[current_index];
         byte a = filter_data->before[current_index - filter_data->bpp];
         byte b = filter_data->before[current_index - filter_data->scanline_length];
-        byte x = filter_data->before[current_index];
 
         if (i < filter_data->bpp + 1)
         {
             if (i == 0)
             {
-                filter_data->after[current_index] = filter_data->before[current_index];
+                filter_data->after[current_index] = x;
                 continue;
             }
+
             a = 0;
         }
 
-        // printf("a: %d\n", a);
+        // printf("a: %d\n", a); 
+        filter_data->after[current_index] = x - ((a + b) / 2);
+    }
+}
 
-        if (filter_data->apply)
+void unfilterAverage(FilterData* filter_data)
+{
+    int current_scanline_start = filter_data->scanline;
+    
+    for (int i = 0; i < filter_data->scanline_length; i++)
+    {
+        int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte a = filter_data->after[current_index - filter_data->bpp];
+        byte b = filter_data->after[current_index - filter_data->scanline_length];
+        
+        if (i < filter_data->bpp + 1)
         {
-            filter_data->after[current_index] = x - ((a + b) / 2);
-        }
-        else
-        {
-            if (i < filter_data->bpp + 1)
+            if (i == 0)
             {
-                filter_data->after[current_index] = filter_data->before[current_index] + ((0 + filter_data->after[current_index - filter_data->scanline_length]) / 2);
+                filter_data->after[current_index] = x;
+                continue;
             }
-            else
-            {
-                filter_data->after[current_index] = filter_data->before[current_index] + ((filter_data->after[current_index - filter_data->bpp] + filter_data->after[current_index - filter_data->scanline_length]) / 2);
-            }
+            
+            a = 0;
         }
+
+        filter_data->after[current_index] = x + ((a + b) / 2); 
     }
 }
 
 void filterPaeth(FilterData* filter_data)
 {
-    int z = filter_data->scanline;
+    int current_scanline_start = filter_data->scanline;
+
     for (int i = 0; i < filter_data->scanline_length; i++)
     {
+        int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte a = filter_data->before[current_index - filter_data->bpp];
+        byte b = filter_data->before[current_index - filter_data->scanline_length];
+        byte c = filter_data->before[current_index - filter_data->scanline_length - filter_data->bpp];
+
         if (i == 0)
         {
-            filter_data->after[z + i] = filter_data->before[z + i];
+            filter_data->after[current_index] = x;
             continue;
         }
 
-        byte a = filter_data->before[z + i - filter_data->bpp];
-        byte b = filter_data->before[z + i - filter_data->scanline_length];
-        byte c = filter_data->before[z + i - filter_data->scanline_length - filter_data->bpp];
-        byte x = filter_data->before[z + i];
-
-        if (filter_data->apply)
-        {
-            filter_data->after[z + i] = x - paethPredictor(a, b, c);
-        }
-        else
-        {
-            filter_data->after[z + i] = filter_data->before[z + i] + paethPredictor(filter_data->after[z + i - filter_data->bpp], filter_data->before[z + i - filter_data->scanline_length], filter_data->before[z + i - filter_data->scanline_length - filter_data->bpp]);
-        }
+        filter_data->after[current_index] = x - paethPredictor(a, b, c); 
     }
+}
+
+void unfilterPaeth(FilterData* filter_data)
+{
+    int current_scanline_start = filter_data->scanline;
+    
+    for (int i = 0; i < filter_data->scanline_length; i++)
+    {
+        int current_index = current_scanline_start + i;
+
+        byte x = filter_data->before[current_index];
+        byte a = filter_data->after[current_index - filter_data->bpp];
+        byte b = filter_data->after[current_index - filter_data->scanline_length];
+        byte c = filter_data->after[current_index - filter_data->scanline_length - filter_data->bpp];       
+       
+        if (i == 0)
+        {
+            filter_data->after[current_index] = x;
+            continue;
+        }
+        
+        filter_data->after[current_index] = x + paethPredictor(a, b, c);
+    } 
 }

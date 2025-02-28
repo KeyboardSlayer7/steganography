@@ -321,6 +321,7 @@ void createModifiedPNGFile(PNG* png, const char* data)
     }
 
     byte* data_length_bytes = &data_length;
+    DataBlock* deflated; 
 
     for (int i = 0; i < png->chunks.size; ++i)
     {
@@ -332,40 +333,18 @@ void createModifiedPNGFile(PNG* png, const char* data)
             fwrite(chunk.data, sizeof(byte), chunk.length, another_file);
             fclose(another_file);
 
-            DataBlock* raw = getRawPixelData(&chunk, &png->ihdr);
-            
-            // printf("got raw pixel data\n");
-
-            // hiding length of data
-            // for (int int_byte = 0; int_byte < sizeof(uint32_t); ++int_byte)
-            // {
-            //     printf("byte: %d\n", (uint32_t)data_length_bytes[int_byte]);
-            //     for (int pair = 0; pair < 8 / 2; ++pair)
-            //     {
-            //         int b = int_byte * 4 + pair + 1;
-            //         byte changed_value = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
-                    
-            //         printf("Changing byte: %d, from %d to %d\n", b, (uint8_t)raw->data[b], (uint8_t)changed_value);
-
-            //         raw->data[b] = setLeastSignificantBits(raw->data[b], getNthBitPair(data_length_bytes[int_byte], pair));
-            //     }
-            // }
-
-            // for (int i = 0; i < 16; ++i)
-            // {
-            //     printf("byte: %d\n", raw->data[i + 1]);
-            // }
+            DataBlock* raw = getRawPixelData(&chunk, &png->ihdr); 
 
             hide(raw, data);
 
-            DataBlock* deflated = compressRawPixelData(raw, &png->ihdr, chunk.length);
+            deflated = compressRawPixelData(raw, &png->ihdr, chunk.length);
             
             chunk.length = deflated->length;
             chunk.data = deflated->data;
             uint32_t crc_temp = (0L, Z_NULL, 0);
             chunk.crc = crc32(crc_temp, chunk.data, chunk.length); 
 
-            printf("CRC after: %d\n", chunk.crc);
+            destroyDataBlock(raw);
         }
 
         uint32_t length = byteswap(chunk.length);
@@ -376,6 +355,8 @@ void createModifiedPNGFile(PNG* png, const char* data)
         fwrite((void*)chunk.data, sizeof(byte), chunk.length, file);
         fwrite((void*)&crc, sizeof(byte), sizeof(uint32_t), file);
     }
+    
+    destroyDataBlock(deflated);
 
     fclose(file);
 }
@@ -394,7 +375,7 @@ char* retrieveFromPNGFile(PNG* png)
             
             output = retrieve(raw);
 
-            free(raw);
+            destroyDataBlock(raw);
         }
     }
 
