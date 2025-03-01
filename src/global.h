@@ -26,6 +26,7 @@ typedef struct array_t
 } Array;
 
 void initArray(Array* array, uint8_t element_size);
+void freeArray(Array* array);
 
 // WARNING!!!: array MUST be an Array*, make sure the value is the same type as the type argument
 #define append(array, type, value)      \
@@ -44,12 +45,23 @@ type* arr = (type*)(array)->data;       \
 #define APPEND(type)                                \
 static void append##type(Array* array, type value)  \
 {                                                   \
-    if (array->size < array->capacity)              \
+    if (array->size >= array->capacity)             \
     {                                               \
-        type* arr = (type*)array->data;             \
-        arr[array->size] = value;                   \
-        array->size++;                              \
+        array->capacity *= 2;                       \
+        void* temp = realloc(array->data, array->capacity * sizeof(type));\
+                                                    \
+        if (temp == NULL)                           \
+        {                                           \
+            printf("Failed to allocate memory for array\n");\
+            exit(EXIT_FAILURE);                     \
+        }                                           \
+                                                    \
+        array->data = temp;                         \
     }                                               \
+                                                    \
+    type* arr = (type*)array->data;                 \
+    arr[array->size] = value;                       \
+    array->size++;                                  \
 }
 
 #define GET(type)                                   \

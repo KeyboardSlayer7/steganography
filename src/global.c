@@ -11,3 +11,11 @@ void initArray(Array* array, uint8_t element_size)
     array->capacity = 10;
     array->size = 0;
 }
+
+void freeArray(Array* array)
+{
+    free(array->data);
+    array->data = NULL;
+    array->capacity = 0;
+    array->size = 0;
+}
