@@ -317,6 +317,7 @@ void createModifiedPNGFile(PNG* png, const char* data)
     if (data != NULL)
     {
         data_length = strlen(data);
+        printf("message: %s\n", data);
         printf("message length: %d\n", data_length);
     }
 

@@ -33,21 +33,21 @@ int main(int argc, char* argv[])
     
     // fclose(input);
 
-    Array arr;
-    initArray(&arr, sizeof(int));
+    // Array arr;
+    // initArray(&arr, sizeof(int));
 
-    for (int i = 0; i < 15; ++i)
-    {
-        appendint(&arr, i + 1);
-    }
+    // for (int i = 0; i < 15; ++i)
+    // {
+    //     appendint(&arr, i + 1);
+    // }
 
-    for (int i = 0; i < 15; ++i)
-    {
-        int value = getint(&arr, i);
-        printf("%d\n", value);
-    }
+    // for (int i = 0; i < 15; ++i)
+    // {
+    //     int value = getint(&arr, i);
+    //     printf("%d\n", value);
+    // }
 
-    freeArray(&arr);
+    // freeArray(&arr);
 
     // uint8_t value = 68;
     

@@ -6,6 +6,12 @@ project(
     LANGUAGES C
 )
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+message(CMAKE_RUNTIME_OUTPUT_DIRECTORY: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 set(
     SOURCES
     src/main.c
@@ -23,26 +29,30 @@ set(
     src/filter.c
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(
     Steganography
     ${SOURCES}
 )
 
+find_package(ZLIB REQUIRED)
+
 target_include_directories(
     Steganography 
     PUBLIC 
-    zlib
+    ${ZLIB_INCLUDE_DIRS}
+    ${ZLIB_INCLUDE_DIRS}/build
 )
 
-target_link_directories(
-    Steganography
-    PUBLIC
-    zlib
-)
+# target_link_directories(
+#     Steganography
+#     PUBLIC
+#     ${ZLIB_ROOT_DIR}
+# )
 
 target_link_libraries(
     Steganography 
-    zlib
+    PUBLIC
+    ${ZLIB_LIBRARIES}
 )
