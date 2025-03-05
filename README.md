@@ -4,7 +4,7 @@ PNG steganography in C with zlib. [Learn more about Steganography here.](https:/
 
 ## Why
 
-I watched a PirateSoftware YouTube Short about how he stores his passwords using steganography, so I had to try it out.
+I came across a PirateSoftware video discussing password storage using steganography, and I wanted to explore the concept myself.
 
 ## Project Status
 
