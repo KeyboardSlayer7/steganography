@@ -5,6 +5,14 @@
 
 #include "global.h"
 
+/*
+FilterData: 
+before: pointer to the data before filtering/unfiltering
+after: pointer to the data after filtering/unfiltering
+scanline: index of the current scanline
+scanline_length: length of the scanline
+bpp: bytes per pixel
+*/
 typedef struct filterdata_t 
 {
     byte* before;
@@ -12,7 +20,6 @@ typedef struct filterdata_t
     int scanline;
     int scanline_length;
     int bpp;
-    bool apply;
 } FilterData;
 
 // void filterNone();

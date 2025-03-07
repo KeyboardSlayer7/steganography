@@ -139,7 +139,7 @@ DataBlock* applyFilter(DataBlock* raw_data, int scanline_length)
     filter_data.after = filtered_data->data;
     filter_data.scanline_length = scanline_length;
     filter_data.bpp = 4;
-    filter_data.apply = true;
+    // filter_data.apply = true;
     
     for (int i = 0; i < scanlines; i++)
     {
@@ -189,7 +189,7 @@ DataBlock* removeFilter(DataBlock* filtered_data, int scanline_length)
     filter_data.after = raw_data->data;
     filter_data.scanline_length = scanline_length;
     filter_data.bpp = 4;
-    filter_data.apply = false;
+    // filter_data.apply = false;
 
     for (int i = 0; i < scanlines; i++)
     {

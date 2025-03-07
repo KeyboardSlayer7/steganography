@@ -5,6 +5,11 @@
 
 #include "global.h"
 
+/* 
+TODO: 
+1. Replace use of DataBlock with Array
+*/
+
 typedef struct datablock_t 
 {
     byte* data;

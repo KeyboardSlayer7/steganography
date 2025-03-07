@@ -84,7 +84,6 @@ int main(int argc, char* argv[])
 
     if (argv[2][0] == 't')
     {
-        // const char* message = "I got the devilchicken on my phone he told me keep edging that shit!";
         const char* message = "Hello!";
         createModifiedPNGFile(&png, message); 
     }
