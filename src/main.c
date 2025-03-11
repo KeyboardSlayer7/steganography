@@ -89,8 +89,20 @@ int main(int argc, char* argv[])
     }
     else if (argv[2][0] == 'f')
     {
-        printf("message: %s\n", retrieveFromPNGFile(&png));
+        char* message = retrieveFromPNGFile(&png);
+        printf("message: %s\n", message);
+        free(message);
     }
+
+    for (int i = 0; i < png.chunks.size; ++i)
+    {
+        Chunk chunk = getChunk(&png.chunks, i);
+        free(chunk.data);
+    }
+
+    freeArray(&png.chunks);
+
+    free(png.header);
 
     // uint8_t options = parseOptions(argv, argc);
 

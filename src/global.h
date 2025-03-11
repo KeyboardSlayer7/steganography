@@ -2,6 +2,7 @@
 #define GLOBAL_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <intrin.h>

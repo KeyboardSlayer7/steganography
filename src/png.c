@@ -36,7 +36,9 @@ void loadPNG(PNG* png, const char* file_path)
             // png->header = ret;
             
             png->header = malloc(sizeof(byte) * HEADER);
-            memcpy(png->header, ret, HEADER); 
+            memcpy(png->header, ret, HEADER);
+            
+            free(ret);
         }
         else
         {
@@ -346,6 +348,7 @@ void createModifiedPNGFile(PNG* png, const char* data)
             chunk.crc = crc32(crc_temp, chunk.data, chunk.length); 
 
             destroyDataBlock(raw);
+            free(raw);
         }
 
         uint32_t length = byteswap(chunk.length);
@@ -358,6 +361,7 @@ void createModifiedPNGFile(PNG* png, const char* data)
     }
     
     destroyDataBlock(deflated);
+    free(deflated);
 
     fclose(file);
 }
@@ -377,6 +381,7 @@ char* retrieveFromPNGFile(PNG* png)
             output = retrieve(raw);
 
             destroyDataBlock(raw);
+            free(raw);
         }
     }
 

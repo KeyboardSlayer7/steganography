@@ -5,3 +5,4 @@
 out.png
 *.txt
 !options.txt
+/linux_build
