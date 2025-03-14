@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 
     if (argv[2][0] == 't')
     {
-        const char* message = "Hello!";
+        const char* message = argv[3];
         createModifiedPNGFile(&png, message); 
     }
     else if (argv[2][0] == 'f')

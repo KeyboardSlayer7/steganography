@@ -30,14 +30,17 @@ I came across a PirateSoftware video discussing password storage using steganogr
 
 ## Usage
 
+> [!NOTE]
+> In the program's current state string must not contain any white spaces in between words. This will be fixed in future versions.
+
 Hiding string
 ```
-Steganography <image> t
+Steganography <image> t string
 ```
 
 Extracting string
 ```
-Steganography <image> f
+Steganography <image> f string
 ```
 
 ## Building
