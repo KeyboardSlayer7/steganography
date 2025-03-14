@@ -40,7 +40,7 @@ Steganography <image> t string
 
 Extracting string
 ```
-Steganography <image> f string
+Steganography <image> f 
 ```
 
 ## Building
