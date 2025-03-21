@@ -22,7 +22,8 @@ I came across a PirateSoftware video discussing password storage using steganogr
 
 :bug: Known Issues
 
-- Doesn't work with PNGs that have multiple IDAT chunks 
+- Doesn't work with PNGs that have multiple IDAT chunks
+- CRC is calculated over just chunk data, not chunk type and chunk data 
 
 :bulb: Future Plans
 
